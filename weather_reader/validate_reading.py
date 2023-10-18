@@ -4,6 +4,7 @@ from datetime import datetime
 import logging
 import logging_config
 import pandas as pd
+from pandas import DataFrame
 
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class Reading(BaseModel):
     city: str
 
 
-def validate_reading(df: pd.DataFrame) -> None:
+def validate_reading(df: pd.DataFrame) -> DataFrame:
     invalid_rows = []
     valid_rows_count = 0
 
@@ -57,3 +58,5 @@ def validate_reading(df: pd.DataFrame) -> None:
         logger.warning(f"Total Invalid Rows: {len(invalid_rows)}")
     else:
         logger.info("All rows are valid.")
+
+    return df
