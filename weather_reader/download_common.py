@@ -11,9 +11,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from pathlib import Path
 from enum import Enum
-from download_seq import download_many as download_readings_seq
-from validate_reading import validate_reading
-from time import time
+
+import time
 from collections import Counter
 
 PROJECT_DIR_PATH = Path(__file__).resolve().parents[1]
@@ -53,7 +52,7 @@ cities = {
     "Milan": {"country": "IT"},
 }
 
-city_lat_long = {
+city_lat_lon = {
     "Istanbul": {"country": "TR", "lat": 41.0091982, "lon": 28.9662187},
     "London": {"country": "GB", "lat": 51.5073219, "lon": -0.1276474},
     "Saint Petersburg": {"country": "RU", "lat": 59.938732, "lon": 30.316229},
@@ -76,28 +75,28 @@ city_lat_long = {
 }
 
 
-def update_city_lat_long(cities=cities, city_lat_long=None):
+def update_city_lat_long(cities=cities, city_lat_lon=None):
     """
     Update or retrieve latitude and longitude coordinates for a list of cities.
 
     This function either updates the latitude and longitude coordinates of the provided cities
-    or retrieves them if not already available in the `city_lat_long` dictionary. If the `city_lat_long`
+    or retrieves them if not already available in the `city_lat_lon` dictionary. If the `city_lat_lon`
     dictionary does not contain coordinates for all cities, it will be updated.
 
     Args:
         cities (dict): A dictionary containing city information, including country and state (if applicable).
-        city_lat_long (dict, optional): A dictionary containing city information with 'lat' and 'lon' coordinates.
+        city_lat_lon (dict, optional): A dictionary containing city information with 'lat' and 'lon' coordinates.
 
     Returns:
         dict: A dictionary containing city information with 'lat' and 'lon' coordinates.
     """
-    if (city_lat_long is None) or (cities.keys() != city_lat_long.keys()):
+    if (city_lat_lon is None) or (cities.keys() != city_lat_lon.keys()):
         logger = logging.getLogger(__name__)
         logging.info("Updating city latitude and longitude coordinates.")
         logging.info("Starting update at: " + str(datetime.now()))
-        city_lat_long = get_lat_long(cities)
+        city_lat_lon = get_lat_long(cities)
         logging.info("Finished update at: " + str(datetime.now()))
-    return city_lat_long
+    return city_lat_lon
 
 
 def get_lat_long(cities=cities) -> dict:
@@ -133,9 +132,9 @@ def get_lat_long(cities=cities) -> dict:
     return cities
 
 
-def initial_report(actual_args, city_lat_long):
+def initial_report(actual_args, city_lat_lon):
     logger = logging.getLogger(__name__)
-    logger.info(f"Getting weather for: {list(city_lat_long.keys())}")
+    logger.info(f"Getting weather for: {list(city_lat_lon.keys())}")
     logger.info(f"Concurrency type: {actual_args[0]}")
     logger.info(f"Max concurrency: {actual_args[1]}")
     logger.info(f"Time started: {datetime.now()}")
@@ -183,31 +182,5 @@ def final_report(counter: Counter[DownloadStatus], start_time: datetime) -> None
     logging.info(f'Elapsed time: {elapsed:.2f}s')
 
 
-def main(concur_type, max_concur_req=None):
-    initial_report((concur_type, max_concur_req), city_lat_long)
-    t0 = time.perf_counter()
-
-    if concur_type == "thread":
-        result = download_readings_concur(SERVERS["WEATHER"], city_lat_long, "thread", max_concur_req)
-        df = result[0]
-        counter = result[1]
-    elif concur_type == "process":
-        result = download_readings_concur(SERVERS["WEATHER"], city_lat_long, "process", max_concur_req)
-        df = result[0]
-        counter = result[1]
-    elif concur_type == "coroutine":
-        result = download_readings_async(SERVERS["WEATHER"], city_lat_long, max_concur_req)
-        df = result[0]
-        counter = result[1]
-    else:
-        result = download_readings_seq(SERVERS["WEATHER"], city_lat_long)
-        df = result[0]
-        counter = result[1]
-
-    valid_readings_batch = validate_reading(df)
-    save_to_pq(valid_readings_batch)
-    final_report(counter, t0)
 
 
-# if __name__ == "__main__":
-#     print(get_lat_long())
