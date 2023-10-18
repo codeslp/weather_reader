@@ -13,12 +13,11 @@ from download_common import save_to_pq, API_KEY, city_lat_lon, DownloadStatus
 from validate_reading import validate_reading
 
 
-
 def get_weather(base_url: str, lat: float, lon: float) -> (str, dict):
     url = f"{base_url}lat={lat}&lon={lon}&exclude=hourly,daily,minutely,alerts&appid={API_KEY}"
     resp = httpx.get(url)
     resp.raise_for_status()
-    return (resp.json())
+    return resp.json()
 
 
 def download_one(base_url: str, city_lat_long_row: dict) -> (DataFrame, DownloadStatus):
@@ -43,7 +42,6 @@ def download_one(base_url: str, city_lat_long_row: dict) -> (DataFrame, Download
         status = DownloadStatus.OK
         logging.info(f"Successful retrieval for: {city} {lat}, {lon}")
 
-
     return (df, status)
 
 
@@ -55,10 +53,11 @@ def flatten_nested_dict(nested_dict, parent_key="", sep="_") -> dict:
             items.update(flatten_nested_dict(v, new_key, sep=sep))
         else:
             items[new_key] = v
+
     return items
 
 
-def flatten_reading_json(city:str, reading: dict) -> DataFrame:
+def flatten_reading_json(city: str, reading: dict) -> DataFrame:
     flattened_data = flatten_nested_dict(reading)
 
     weather_info = reading["current"]["weather"][0]
@@ -88,25 +87,25 @@ def download_many(base_url: str, city_lat_lon: dict) -> (DataFrame, Counter):
                 dataframes.append(df)
             status = one_response[1]
         except httpx.HTTPStatusError as exc:
-            error_msg = 'HTTP error {exc.response.status_code} - {exc.response.reason_phrase}'
+            error_msg = (
+                "HTTP error {exc.response.status_code} - {exc.response.reason_phrase}"
+            )
             error_msg = error_msg.format(resp=exc.response)
         except httpx.RequestError as exc:
-            error_msg = f'{exc} {type(exc)}'.strip()
+            error_msg = f"{exc} {type(exc)}".strip()
         except KeyboardInterrupt:
             break
         else:
-            error_msg = ''
-        
+            error_msg = ""
+
         if error_msg:
             status = DownloadStatus.ERROR
             logging.error(error_msg)
         counter[status] += 1
-    
+
     df = pd.concat(dataframes, ignore_index=True)
 
     return (df, counter)
-
-
 
 
 # base_url = "https://api.openweathermap.org/data/3.0/onecall?"

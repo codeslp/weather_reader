@@ -24,8 +24,8 @@ load_dotenv(PROJECT_DIR_PATH / ".env")
 API_KEY = os.getenv("API_KEY")
 
 SERVERS = {
-    'LATLONG': 'http://api.openweathermap.org/geo/1.0/direct?',
-    'WEATHER': 'http://api.openweathermap.org/data/3.0/onecall?'
+    "LATLONG": "http://api.openweathermap.org/geo/1.0/direct?",
+    "WEATHER": "http://api.openweathermap.org/data/3.0/onecall?",
 }
 
 DownloadStatus = Enum("DownloadStatus", "OK NOT_FOUND ERROR")
@@ -172,15 +172,11 @@ def save_to_pq(df):
 
 def final_report(counter: Counter[DownloadStatus], start_time: datetime) -> None:
     elapsed = time.perf_counter() - start_time
-    plural = 's' if counter[DownloadStatus.OK] != 1 else ''
-    logging.info(f'{counter[DownloadStatus.OK]:3} readings{plural} downloaded.')
+    plural = "s" if counter[DownloadStatus.OK] != 1 else ""
+    logging.info(f"{counter[DownloadStatus.OK]:3} readings{plural} downloaded.")
     if counter[DownloadStatus.NOT_FOUND]:
-        logging.error(f'{counter[DownloadStatus.NOT_FOUND]:3} not found.')
+        logging.error(f"{counter[DownloadStatus.NOT_FOUND]:3} not found.")
     if counter[DownloadStatus.ERROR]:
-        plural = 's' if counter[DownloadStatus.ERROR] != 1 else ''
-        logging.error(f'{counter[DownloadStatus.ERROR]:3} error{plural}.')
-    logging.info(f'Elapsed time: {elapsed:.2f}s')
-
-
-
-
+        plural = "s" if counter[DownloadStatus.ERROR] != 1 else ""
+        logging.error(f"{counter[DownloadStatus.ERROR]:3} error{plural}.")
+    logging.info(f"Elapsed time: {elapsed:.2f}s")
