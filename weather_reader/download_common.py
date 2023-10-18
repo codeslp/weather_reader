@@ -10,6 +10,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from pathlib import Path
+from enum import Enum
 
 PROJECT_DIR_PATH = Path(__file__).resolve().parents[1]
 DATA_DIR_PATH = PROJECT_DIR_PATH / "data"
@@ -18,6 +19,8 @@ DATA_DIR_PATH.mkdir(parents=True, exist_ok=True)
 load_dotenv(PROJECT_DIR_PATH / ".env")
 
 API_KEY = os.getenv("API_KEY")
+
+DownloadStatus = Enum("DownloadStatus", "OK NOT_FOUND ERROR")
 
 cities = {
     "Istanbul": {"country": "TR"},
@@ -149,11 +152,11 @@ def save_to_pq(df):
         save_to_pq(my_dataframe)
     """
     try:
-        readings_table = pa.Table.from_pandas(df)
+        readings_dict = pa.Table.from_pandas(df)
         pq_path = (
             DATA_DIR_PATH / f"{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}.parquet"
         )
-        pq.write_table(readings_table, pq_path)
+        pq.write_table(readings_dict, pq_path)
         logging.info(f"Saved to {pq_path}")
     except Exception as e:
         logging.error(f"Error saving to Parquet: {e}")
