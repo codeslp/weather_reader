@@ -10,7 +10,6 @@ from pandas import DataFrame
 from datetime import datetime
 
 from download_common import save_to_pq, API_KEY, city_lat_lon, DownloadStatus
-from validate_reading import validate_reading
 
 
 def get_weather(base_url: str, lat: float, lon: float) -> (str, dict):
@@ -88,7 +87,7 @@ def download_many(base_url: str, city_lat_lon: dict) -> (DataFrame, Counter):
             status = one_response[1]
         except httpx.HTTPStatusError as exc:
             error_msg = (
-                "HTTP error {exc.response.status_code} - {exc.response.reason_phrase}"
+                "HTTP error {resp.status_code} - {resp.reason_phrase}"
             )
             error_msg = error_msg.format(resp=exc.response)
         except httpx.RequestError as exc:
