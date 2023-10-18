@@ -1,7 +1,5 @@
 from download_seq import download_many as download_readings_seq
-
-# from download_concur import download_many as download_readings_concur
-# from download_async import download_many as download_readings_async
+from download_concur import download_many as download_readings_concur
 from validate_reading import validate_reading
 from download_common import (
     save_to_pq,
@@ -11,7 +9,6 @@ from download_common import (
     city_lat_lon,
 )
 import time
-
 
 def main(city_lat_lon, concur_type=None, max_concur_req=None):
     initial_report((concur_type, max_concur_req), city_lat_lon)
@@ -24,19 +21,22 @@ def main(city_lat_lon, concur_type=None, max_concur_req=None):
         df = result[0]
         counter = result[1]
     elif concur_type == "process":
-        result = download_readings_concur(
-            SERVERS["WEATHER"], city_lat_lon, "process", max_concur_req
-        )
+        if __name__ == '__main__':
+            result = download_readings_concur(
+                SERVERS["WEATHER"], city_lat_lon, "process", max_concur_req
+            )
         df = result[0]
         counter = result[1]
     elif concur_type == "coroutine":
-        result = download_readings_async(
-            SERVERS["WEATHER"], city_lat_lon, max_concur_req
-        )
+        if __name__ == '__main__':
+            result = download_readings_async(
+                SERVERS["WEATHER"], city_lat_lon, max_concur_req
+            )
         df = result[0]
         counter = result[1]
     else:
-        result = download_readings_seq(SERVERS["WEATHER"], city_lat_lon)
+        if __name__ == '__main__':
+            result = download_readings_seq(SERVERS["WEATHER"], city_lat_lon)
         df = result[0]
         counter = result[1]
 
@@ -46,5 +46,6 @@ def main(city_lat_lon, concur_type=None, max_concur_req=None):
 
     return df
 
+if __name__ == '__main__':
 
-print(main(city_lat_lon))
+    print(main(city_lat_lon, "thread"))
