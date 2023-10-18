@@ -9,20 +9,19 @@ import pandas as pd
 from pandas import DataFrame
 from datetime import datetime
 
-from download_common import save_to_pq, API_KEY, city_lat_long, DownloadStatus
+from download_common import save_to_pq, API_KEY, city_lat_lon, DownloadStatus
 from validate_reading import validate_reading
 
-base_url = "https://api.openweathermap.org/data/3.0/onecall?"
 
 
-def get_weather(base_url: str, lat: float, lon: float) -> dict:
+def get_weather(base_url: str, lat: float, lon: float) -> (str, dict):
     url = f"{base_url}lat={lat}&lon={lon}&exclude=hourly,daily,minutely,alerts&appid={API_KEY}"
     resp = httpx.get(url)
     resp.raise_for_status()
-    return resp.json()
+    return (resp.json())
 
 
-def download_one(base_url: str, city_lat_long_row: dict) -> DownloadStatus:
+def download_one(base_url: str, city_lat_long_row: dict) -> (DataFrame, DownloadStatus):
     status = DownloadStatus.ERROR
     try:
         for city, data in city_lat_long_row.items():
@@ -40,7 +39,7 @@ def download_one(base_url: str, city_lat_long_row: dict) -> DownloadStatus:
             logging.error(f"HTTP Error for {city} {lat}, {lon}: {e}")
 
     else:
-        df = flatten_reading_json(reading)
+        df = flatten_reading_json(city, reading)
         status = DownloadStatus.OK
         logging.info(f"Successful retrieval for: {city} {lat}, {lon}")
 
@@ -48,7 +47,7 @@ def download_one(base_url: str, city_lat_long_row: dict) -> DownloadStatus:
     return (df, status)
 
 
-def flatten_nested_dict(nested_dict, parent_key="", sep="_"):
+def flatten_nested_dict(nested_dict, parent_key="", sep="_") -> dict:
     items = {}
     for k, v in nested_dict.items():
         new_key = f"{k}" if parent_key else k
@@ -59,7 +58,7 @@ def flatten_nested_dict(nested_dict, parent_key="", sep="_"):
     return items
 
 
-def flatten_reading_json(reading: dict) -> DataFrame:
+def flatten_reading_json(city:str, reading: dict) -> DataFrame:
     flattened_data = flatten_nested_dict(reading)
 
     weather_info = reading["current"]["weather"][0]
@@ -71,17 +70,17 @@ def flatten_reading_json(reading: dict) -> DataFrame:
 
     df = pd.DataFrame([flattened_data])
     df["timestamp"] = datetime.now()
-    df["city"] = list(city_lat_long.keys())[0]
+    df["city"] = city
 
     df.drop(columns=["weather"], errors="ignore", inplace=True)
 
     return df
 
 
-def download_many(base_url: str, city_lat_long: dict) -> DataFrame:
+def download_many(base_url: str, city_lat_lon: dict) -> (DataFrame, Counter):
     counter: Counter[DownloadStatus] = Counter()
     dataframes = []
-    for city, data in city_lat_long.items():
+    for city, data in city_lat_lon.items():
         try:
             one_response = download_one(base_url, {city: data})
             df = one_response[0]
@@ -104,12 +103,12 @@ def download_many(base_url: str, city_lat_long: dict) -> DataFrame:
         counter[status] += 1
     
     df = pd.concat(dataframes, ignore_index=True)
-    
+
     return (df, counter)
 
 
 
 
-
-# city_lat_long = {"Istanbul": {"country": "TR", "lat": 41.0091982, "lon": 28.9662187}}
-download_many(base_url, city_lat_long)
+# base_url = "https://api.openweathermap.org/data/3.0/onecall?"
+# city_lat_lon = {"Istanbul": {"country": "TR", "lat": 41.0091982, "lon": 28.9662187}}
+# download_many(base_url, city_lat_lon)
