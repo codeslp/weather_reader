@@ -22,14 +22,14 @@ def get_weather(base_url: str, lat: float, lon: float) -> dict:
     return resp.json()
 
 
-def download_one(city_lat_long: dict) -> DownloadStatus:
+def download_one(base_url: str, city_lat_long_row: dict) -> DownloadStatus:
+    status = DownloadStatus.ERROR
     try:
-        for city, data in city_lat_long.items():
-            print(city, data)
+        for city, data in city_lat_long_row.items():
             lat = data.get("lat")
             lon = data.get("lon")
-        logging.info(f"Getting weather for: {city} {lat}, {lon}")
-        reading = get_weather(base_url, lat, lon)
+            logging.info(f"Getting weather for: {city} {lat}, {lon}")
+            reading = get_weather(base_url, lat, lon)
 
     except httpx.HTTPError as e:
         res = e.response
@@ -37,16 +37,15 @@ def download_one(city_lat_long: dict) -> DownloadStatus:
             status = DownloadStatus.NOT_FOUND
             logging.error(f"{city} {lat}, {lon} not found: {res.url}")
         else:
-            raise
+            logging.error(f"HTTP Error for {city} {lat}, {lon}: {e}")
 
     else:
         df = flatten_reading_json(reading)
         status = DownloadStatus.OK
         logging.info(f"Successful retrieval for: {city} {lat}, {lon}")
-        validate_reading(df)
-        # save_to_pq(df)
 
-    return status
+
+    return (df, status)
 
 
 def flatten_nested_dict(nested_dict, parent_key="", sep="_"):
@@ -60,7 +59,7 @@ def flatten_nested_dict(nested_dict, parent_key="", sep="_"):
     return items
 
 
-def flatten_reading_json(reading: dict) -> pd.DataFrame:
+def flatten_reading_json(reading: dict) -> DataFrame:
     flattened_data = flatten_nested_dict(reading)
 
     weather_info = reading["current"]["weather"][0]
@@ -79,5 +78,38 @@ def flatten_reading_json(reading: dict) -> pd.DataFrame:
     return df
 
 
-city_lat_long = {"Istanbul": {"country": "TR", "lat": 41.0091982, "lon": 28.9662187}}
-download_one(city_lat_long)
+def download_many(base_url: str, city_lat_long: dict) -> DataFrame:
+    counter: Counter[DownloadStatus] = Counter()
+    dataframes = []
+    for city, data in city_lat_long.items():
+        try:
+            one_response = download_one(base_url, {city: data})
+            df = one_response[0]
+            if df is not None:
+                dataframes.append(df)
+            status = one_response[1]
+        except httpx.HTTPStatusError as exc:
+            error_msg = 'HTTP error {exc.response.status_code} - {exc.response.reason_phrase}'
+            error_msg = error_msg.format(resp=exc.response)
+        except httpx.RequestError as exc:
+            error_msg = f'{exc} {type(exc)}'.strip()
+        except KeyboardInterrupt:
+            break
+        else:
+            error_msg = ''
+        
+        if error_msg:
+            status = DownloadStatus.ERROR
+            logging.error(error_msg)
+        counter[status] += 1
+    
+    df = pd.concat(dataframes, ignore_index=True)
+    
+    return (df, counter)
+
+
+
+
+
+# city_lat_long = {"Istanbul": {"country": "TR", "lat": 41.0091982, "lon": 28.9662187}}
+download_many(base_url, city_lat_long)
