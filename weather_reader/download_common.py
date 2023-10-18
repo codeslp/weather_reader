@@ -11,6 +11,10 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from pathlib import Path
 from enum import Enum
+from download_seq import download_many as download_readings_seq
+from validate_reading import validate_reading
+from time import time
+from collections import Counter
 
 PROJECT_DIR_PATH = Path(__file__).resolve().parents[1]
 DATA_DIR_PATH = PROJECT_DIR_PATH / "data"
@@ -19,6 +23,11 @@ DATA_DIR_PATH.mkdir(parents=True, exist_ok=True)
 load_dotenv(PROJECT_DIR_PATH / ".env")
 
 API_KEY = os.getenv("API_KEY")
+
+SERVERS = {
+    'LATLONG': 'http://api.openweathermap.org/geo/1.0/direct?',
+    'WEATHER': 'http://api.openweathermap.org/data/3.0/onecall?'
+}
 
 DownloadStatus = Enum("DownloadStatus", "OK NOT_FOUND ERROR")
 
@@ -102,7 +111,7 @@ def get_lat_long(cities=cities) -> dict:
         dict: A dictionary containing city information with added 'lat' and 'lon' coordinates.
     """
 
-    base_url = "http://api.openweathermap.org/geo/1.0/direct?"
+    base_url = SERVERS["LATLONG"]
 
     for city, co_st in cities.items():
         country_code = co_st["country"]
@@ -162,28 +171,42 @@ def save_to_pq(df):
         logging.error(f"Error saving to Parquet: {e}")
 
 
-def final_report(df):
-    # not implemented
-    pass
+def final_report(counter: Counter[DownloadStatus], start_time: datetime) -> None:
+    elapsed = time.perf_counter() - start_time
+    plural = 's' if counter[DownloadStatus.OK] != 1 else ''
+    logging.info(f'{counter[DownloadStatus.OK]:3} readings{plural} downloaded.')
+    if counter[DownloadStatus.NOT_FOUND]:
+        logging.error(f'{counter[DownloadStatus.NOT_FOUND]:3} not found.')
+    if counter[DownloadStatus.ERROR]:
+        plural = 's' if counter[DownloadStatus.ERROR] != 1 else ''
+        logging.error(f'{counter[DownloadStatus.ERROR]:3} error{plural}.')
+    logging.info(f'Elapsed time: {elapsed:.2f}s')
 
 
 def main(concur_type, max_concur_req=None):
-    actual_args = (concur_type, max_concur_req)
-    # call initial_report
     initial_report((concur_type, max_concur_req), city_lat_long)
+    t0 = time.perf_counter()
 
-    # logic about what concurrency type to use, make request
     if concur_type == "thread":
-        download_readings_concur(city_lat_long, "thread", max_concur_req)
+        result = download_readings_concur(SERVERS["WEATHER"], city_lat_long, "thread", max_concur_req)
+        df = result[0]
+        counter = result[1]
     elif concur_type == "process":
-        download_readings_concur(city_lat_long, "process", max_concur_req)
+        result = download_readings_concur(SERVERS["WEATHER"], city_lat_long, "process", max_concur_req)
+        df = result[0]
+        counter = result[1]
     elif concur_type == "coroutine":
-        download_readings_async(city_lat_long, max_concur_req)
+        result = download_readings_async(SERVERS["WEATHER"], city_lat_long, max_concur_req)
+        df = result[0]
+        counter = result[1]
     else:
-        download_readings(city_lat_long)
-    # write locally to parquet
+        result = download_readings_seq(SERVERS["WEATHER"], city_lat_long)
+        df = result[0]
+        counter = result[1]
 
-    # call final_report
+    valid_readings_batch = validate_reading(df)
+    save_to_pq(valid_readings_batch)
+    final_report(counter, t0)
 
 
 # if __name__ == "__main__":
