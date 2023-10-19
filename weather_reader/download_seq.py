@@ -86,9 +86,7 @@ def download_many(base_url: str, city_lat_lon: dict) -> (DataFrame, Counter):
                 dataframes.append(df)
             status = one_response[1]
         except httpx.HTTPStatusError as exc:
-            error_msg = (
-                "HTTP error {resp.status_code} - {resp.reason_phrase}"
-            )
+            error_msg = "HTTP error {resp.status_code} - {resp.reason_phrase}"
             error_msg = error_msg.format(resp=exc.response)
         except httpx.RequestError as exc:
             error_msg = f"{exc} {type(exc)}".strip()
