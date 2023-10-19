@@ -77,12 +77,12 @@ async def flatten_reading_json_async(city: str, reading: dict) -> DataFrame:
     df["city"] = city
 
     df.drop(columns=["weather"], errors="ignore", inplace=True)
-        
+
     return df
 
 
 async def supervisor(
-    city_lat_lon: dict, base_url: str, concur_req: int=None
+    city_lat_lon: dict, base_url: str, concur_req: int = None
 ) -> (DataFrame, Counter):
     counter: Counter[DownloadStatus] = Counter()
     semaphore = None
@@ -90,8 +90,10 @@ async def supervisor(
         semaphore = asyncio.Semaphore(concur_req)
     dataframes = []
     async with httpx.AsyncClient() as client:
-        to_do = [download_one_async(client, base_url, semaphore, {city: data}) 
-                 for city, data in city_lat_lon.items()]
+        to_do = [
+            download_one_async(client, base_url, semaphore, {city: data})
+            for city, data in city_lat_lon.items()
+        ]
         to_do_iter = asyncio.as_completed(to_do)
         error: httpx.HTTPError | None = None
         for coro in to_do_iter:
