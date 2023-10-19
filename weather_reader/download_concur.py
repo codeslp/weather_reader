@@ -5,10 +5,13 @@ import logging
 import logging_config
 from pandas import DataFrame
 import pandas as pd
-from download_common import DownloadStatus
+from download_common import DownloadStatus, save_to_pq
 from download_seq import download_one
 
-def download_many(base_url:str, city_lat_lon: dict, concur_type:str, max_concur_req:int) -> (DataFrame, Counter):
+
+def download_many(
+    base_url: str, city_lat_lon: dict, concur_type: str, max_concur_req: int
+) -> (DataFrame, Counter):
     counter: Counter[DownloadStatus] = Counter()
     dataframes = []
     if concur_type == "thread":
@@ -27,9 +30,7 @@ def download_many(base_url:str, city_lat_lon: dict, concur_type:str, max_concur_
                 df, status = future.result()
                 dataframes.append(df)
             except httpx.HTTPStatusError as exc:
-                error_msg = (
-                    "HTTP error {resp.status_code} - {resp.reason_phrase}"
-                )
+                error_msg = "HTTP error {resp.status_code} - {resp.reason_phrase}"
                 error_msg = error_msg.format(resp=exc.response)
             except httpx.RequestError as exc:
                 error_msg = f"{exc} {type(exc)}".strip()
