@@ -1,18 +1,35 @@
 from collections import Counter
-from http import HTTPStatus
-
-import httpx
+from datetime import datetime
 import logging
 import logging_config
 from urllib.parse import urlencode
+
+import httpx
+from http import HTTPStatus
 import pandas as pd
 from pandas import DataFrame
-from datetime import datetime
 
-from download_common import save_to_pq, API_KEY, city_lat_lon, DownloadStatus
+from download_common import DownloadStatus, save_to_pq, API_KEY
+
 
 
 def get_weather(base_url: str, lat: float, lon: float) -> (str, dict):
+    """
+    Get weather data for a specific latitude and longitude.
+
+    Args:
+        base_url (str): The base URL of the weather API.
+        lat (float): The latitude coordinate.
+        lon (float): The longitude coordinate.
+
+    Returns:
+        tuple: A tuple containing a string and a dictionary.
+            - The string represents the response status.
+            - The dictionary contains weather data.
+
+    Raises:
+        httpx.HTTPError: If an HTTP error occurs during the request.
+    """
     url = f"{base_url}lat={lat}&lon={lon}&exclude=hourly,daily,minutely,alerts&appid={API_KEY}"
     resp = httpx.get(url)
     resp.raise_for_status()
@@ -20,6 +37,21 @@ def get_weather(base_url: str, lat: float, lon: float) -> (str, dict):
 
 
 def download_one(base_url: str, city_lat_long_row: dict) -> (DataFrame, DownloadStatus):
+    """
+    Download weather data for a city's latitude and longitude.
+
+    Args:
+        base_url (str): The base URL of the weather API.
+        city_lat_long_row (dict): A dictionary containing city information.
+
+    Returns:
+        tuple: A tuple containing a DataFrame and a DownloadStatus.
+            - The DataFrame contains weather data.
+            - The DownloadStatus indicates the success or failure of the download.
+
+    Raises:
+        httpx.HTTPError: If an HTTP error occurs during the request.
+    """
     status = DownloadStatus.ERROR
     try:
         for city, data in city_lat_long_row.items():
@@ -45,6 +77,17 @@ def download_one(base_url: str, city_lat_long_row: dict) -> (DataFrame, Download
 
 
 def flatten_nested_dict(nested_dict, parent_key="", sep="_") -> dict:
+    """
+    Flatten a nested dictionary into a flat dictionary.
+
+    Args:
+        nested_dict (dict): The nested dictionary to be flattened.
+        parent_key (str, optional): The parent key used for prefixing keys.
+        sep (str, optional): The separator used to separate keys in the flattened dictionary.
+
+    Returns:
+        dict: A flat dictionary containing flattened key-value pairs from the nested dictionary.
+    """
     items = {}
     for k, v in nested_dict.items():
         new_key = f"{k}" if parent_key else k
@@ -57,6 +100,17 @@ def flatten_nested_dict(nested_dict, parent_key="", sep="_") -> dict:
 
 
 def flatten_reading_json(city: str, reading: dict) -> DataFrame:
+    """
+    Flatten a JSON response from weather data into a DataFrame and add city 
+    and timestamp columns.
+
+    Args:
+        city (str): The name of the city for which the weather data is retrieved.
+        reading (dict): The nested JSON response containing weather data.
+
+    Returns:
+        pandas.DataFrame: A DataFrame containing flattened weather data.
+    """
     flattened_data = flatten_nested_dict(reading)
 
     weather_info = reading["current"]["weather"][0]
@@ -76,6 +130,16 @@ def flatten_reading_json(city: str, reading: dict) -> DataFrame:
 
 
 def download_many(base_url: str, city_lat_lon: dict) -> (DataFrame, Counter):
+    """
+    Download weather data for multiple cities and aggregate the results.
+
+    Args:
+        base_url (str): The base URL for weather data API.
+        city_lat_lon (dict): A dictionary containing city information including latitude and longitude.
+
+    Returns:
+        tuple: A tuple containing a DataFrame with weather data and a Counter with download status counts.
+    """
     counter: Counter[DownloadStatus] = Counter()
     dataframes = []
     for city, data in city_lat_lon.items():
@@ -103,8 +167,3 @@ def download_many(base_url: str, city_lat_lon: dict) -> (DataFrame, Counter):
     df = pd.concat(dataframes, ignore_index=True)
 
     return (df, counter)
-
-
-# base_url = "https://api.openweathermap.org/data/3.0/onecall?"
-# city_lat_lon = {"Istanbul": {"country": "TR", "lat": 41.0091982, "lon": 28.9662187}}
-# download_many(base_url, city_lat_lon)

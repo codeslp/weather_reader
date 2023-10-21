@@ -1,17 +1,35 @@
-from collections import Counter
-from http import HTTPStatus
 import httpx
 import logging
-import logging_config
+from collections import Counter
 from pandas import DataFrame
 import pandas as pd
-from download_common import DownloadStatus, save_to_pq
+from download_common import DownloadStatus
 from download_seq import download_one
+
 
 
 def download_many(
     base_url: str, city_lat_lon: dict, concur_type: str, max_concur_req: int
 ) -> (DataFrame, Counter):
+    """
+    Download weather data for multiple cities concurrently using thread or process pools.
+
+    Args:
+        base_url (str): The base URL for the weather API.
+        city_lat_lon (dict): A dictionary containing city information with latitude and longitude coordinates.
+        concur_type (str): The concurrency type, either "thread" or "process".
+        max_concur_req (int): The maximum number of concurrent requests to be made.
+
+    Returns:
+        tuple: A tuple containing a DataFrame with weather data and a Counter object
+        tracking the download status.
+
+    Raises:
+        Exception: If an error occurs during the download process, an error message is logged.
+
+    Example:
+        df, counter = download_many(base_url, city_lat_lon, "thread", 5)
+    """
     counter: Counter[DownloadStatus] = Counter()
     dataframes = []
     if concur_type == "thread":
