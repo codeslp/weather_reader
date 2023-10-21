@@ -1,10 +1,8 @@
 from pydantic import BaseModel, Field, ValidationError
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime
 import logging
-import logging_config
 import pandas as pd
-from pandas import DataFrame
 
 
 logger = logging.getLogger(__name__)
@@ -39,7 +37,22 @@ class Reading(BaseModel):
     city: str
 
 
-def validate_reading(df: pd.DataFrame) -> DataFrame:
+def validate_reading(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Validate rows in a DataFrame using a Pydantic model.
+
+    This function takes a DataFrame as input and validates each row using a Pydantic model called `Reading`.
+    Rows that fail validation are logged as errors, and valid rows are counted and logged as information.
+    
+    Args:
+        df (pd.DataFrame): The DataFrame containing the rows to be validated.
+
+    Returns:
+        pd.DataFrame: The same DataFrame passed as input.
+
+    Example:
+        validated_df = validate_reading(my_dataframe)
+    """
     invalid_rows = []
     valid_rows_count = 0
 
