@@ -1,6 +1,7 @@
 *.csv
 .DS_Store
 notes.ipynb
+city_lat_lon.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
