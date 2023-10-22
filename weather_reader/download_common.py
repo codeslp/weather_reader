@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 
 PROJECT_DIR_PATH = Path(__file__).resolve().parents[1]
-DATA_DIR_PATH = PROJECT_DIR_PATH / "data"
+DATA_DIR_PATH = PROJECT_DIR_PATH / "data_lake"
 DATA_DIR_PATH.mkdir(parents=True, exist_ok=True)
 
 load_dotenv(PROJECT_DIR_PATH / ".env")
