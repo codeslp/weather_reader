@@ -7,7 +7,6 @@ from download_common import DownloadStatus
 from download_seq import download_one
 
 
-
 def download_many(
     base_url: str, city_lat_lon: dict, concur_type: str, max_concur_req: int
 ) -> (DataFrame, Counter):
