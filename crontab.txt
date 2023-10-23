@@ -1,0 +1,1 @@
+57 * * * * source /Users/bfaris96/Desktop/turing-proj/weather_reader/.venv/bin/activate && /usr/bin/python3 /Users/bfaris96/Desktop/turing-proj/weather_reader/weather_reader/main.py
