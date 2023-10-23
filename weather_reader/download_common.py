@@ -9,6 +9,8 @@ from collections import Counter
 import pyarrow as pa
 import pyarrow.parquet as pq
 from dotenv import load_dotenv
+from sqlalchemy import create_engine, text
+from sqlalchemy.ext.declarative import declarative_base
 
 
 PROJECT_DIR_PATH = Path(__file__).resolve().parents[1]
@@ -18,13 +20,25 @@ DATA_DIR_PATH.mkdir(parents=True, exist_ok=True)
 load_dotenv(PROJECT_DIR_PATH / ".env")
 API_KEY = os.getenv("API_KEY")
 
+Base = declarative_base()
+
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST")
+DB_NAME = os.getenv("DB_NAME")
+
 SERVERS = {
     "LATLONG": "http://api.openweathermap.org/geo/1.0/direct?",
     "WEATHER": "http://api.openweathermap.org/data/3.0/onecall?",
+    "POSTGRES_DB_SERVER": f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}",
 }
 
-DownloadStatus = Enum("DownloadStatus", "OK NOT_FOUND ERROR")
+engine = create_engine(
+    SERVERS["POSTGRES_DB_SERVER"], connect_args={"options": "-csearch_path=public"}
+)
 
+
+DownloadStatus = Enum("DownloadStatus", "OK NOT_FOUND ERROR")
 
 
 def initial_report(actual_args, city_lat_lon) -> None:
@@ -73,6 +87,27 @@ def save_to_pq(df) -> None:
         logging.info(f"Saved to {pq_path}")
     except Exception as e:
         logging.error(f"Error saving to Parquet: {e}")
+
+
+def save_to_db(df) -> None:
+    """
+    Save a DataFrame to a PostgreSQL database table.
+
+    Args:
+        df (DataFrame): The DataFrame to be saved.
+        engine (sqlalchemy.engine.base.Engine): The SQLAlchemy engine connected to the database.
+
+    Returns:
+        None
+
+    Raises:
+        Exception: If there's an error while saving the DataFrame to the database.
+    """
+    try:
+        df.to_sql("readings", engine, if_exists="append", index=False)
+        logging.info(f"Saved to readings table at {SERVERS['POSTGRES_DB_SERVER']}")
+    except Exception as e:
+        logging.error(f"Error saving to database: {e}")
 
 
 def final_report(counter: Counter[DownloadStatus], start_time: datetime) -> None:
