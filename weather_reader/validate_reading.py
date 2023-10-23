@@ -43,7 +43,7 @@ def validate_reading(df: pd.DataFrame) -> pd.DataFrame:
 
     This function takes a DataFrame as input and validates each row using a Pydantic model called `Reading`.
     Rows that fail validation are logged as errors, and valid rows are counted and logged as information.
-    
+
     Args:
         df (pd.DataFrame): The DataFrame containing the rows to be validated.
 
