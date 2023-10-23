@@ -12,7 +12,6 @@ from pandas import DataFrame
 from download_common import DownloadStatus, save_to_pq, API_KEY
 
 
-
 def get_weather(base_url: str, lat: float, lon: float) -> (str, dict):
     """
     Get weather data for a specific latitude and longitude.
@@ -101,7 +100,7 @@ def flatten_nested_dict(nested_dict, parent_key="", sep="_") -> dict:
 
 def flatten_reading_json(city: str, reading: dict) -> DataFrame:
     """
-    Flatten a JSON response from weather data into a DataFrame and add city 
+    Flatten a JSON response from weather data into a DataFrame and add city
     and timestamp columns.
 
     Args:
@@ -124,7 +123,7 @@ def flatten_reading_json(city: str, reading: dict) -> DataFrame:
     df["timestamp"] = datetime.now()
     df["city"] = city
 
-    df.drop(columns=["weather"], errors="ignore", inplace=True)
+    df.drop(columns=["weather", "1h"], errors="ignore", inplace=True)
 
     return df
 

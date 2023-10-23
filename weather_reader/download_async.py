@@ -135,7 +135,7 @@ async def flatten_reading_json_async(city: str, reading: dict) -> DataFrame:
     df["timestamp"] = datetime.now()
     df["city"] = city
 
-    df.drop(columns=["weather"], errors="ignore", inplace=True)
+    df.drop(columns=["weather", "1h"], errors="ignore", inplace=True)
 
     return df
 
