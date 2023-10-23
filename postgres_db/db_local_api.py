@@ -29,8 +29,12 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_HOST = os.getenv("DB_HOST")
 DB_NAME = os.getenv("DB_NAME")
 
-POSTGRES_DB_SERVER = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
-engine = create_engine(POSTGRES_DB_SERVER, connect_args={'options': '-csearch_path=relational'})
+POSTGRES_DB_SERVER = (
+    f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+)
+engine = create_engine(
+    POSTGRES_DB_SERVER, connect_args={"options": "-csearch_path=public"}
+)
 
 logger = logging.getLogger(__name__)
 
@@ -79,14 +83,16 @@ class _db_api:
         """
         try:
             with self.engine.connect() as conn:
-                result = conn.execute(text(query).bindparams(**params if params else {}))
+                result = conn.execute(
+                    text(query).bindparams(**params if params else {})
+                )
                 data = result.fetchall()
                 columns = result.keys()
         except SQLAlchemyError as e:
             logger.error(f"Query caused this error: {e}")
             data, columns = None, None
         return data, columns
-    
+
     def _write(self, query, params=None):
         """
         Execute a SQL write query.
@@ -102,7 +108,9 @@ class _db_api:
         except SQLAlchemyError as e:
             logger.error(f"Failed to write to database due to this error: {e}")
 
+
 _api = _db_api()
+
 
 def read(query, **kwargs):
     """
@@ -117,14 +125,15 @@ def read(query, **kwargs):
     Returns:
         DataFrame: The result of the query.
     """
-    data, columns = _api._read(query, params=kwargs.get('params'))
+    data, columns = _api._read(query, params=kwargs.get("params"))
     if data is None or columns is None:
         logger.error("Query returned None.")
         return None
     df = pd.DataFrame(data, columns=columns)
-    if kwargs.get('verbose', True):
-        print(tabulate(df, headers='keys', tablefmt='rounded_outline'))
+    if kwargs.get("verbose", True):
+        print(tabulate(df, headers="keys", tablefmt="rounded_outline"))
     return df
+
 
 def write(query, **kwargs):
     """
@@ -135,4 +144,4 @@ def write(query, **kwargs):
         **kwargs:
             params (dict, optional): Parameters for the SQL query.
     """
-    _api._write(query, params=kwargs.get('params'))
+    _api._write(query, params=kwargs.get("params"))
