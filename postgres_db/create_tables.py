@@ -24,7 +24,7 @@ data_frame = read("SELECT * FROM users WHERE ...;")
 query = """
 drop table if exists readings;
 create table readings (
-    time timestamptz not null,
+    timestamp timestamptz not null,
     city varchar(255) not null,
     lat double precision not null check (lat >= -90 and lat <= 90),
     lon double precision not null check (lon >= -180 and lon <= 180),
@@ -44,13 +44,13 @@ create table readings (
     wind_speed double precision not null,
     wind_deg double precision not null,
     wind_gust double precision not null,
-    weather_type_code int not null,
+    id int not null,
     main varchar(25) not null,
     description varchar(60) not null,
     icon varchar(10) not null,
     rain_1h double precision not null,
     snow_1h double precision not null,
-    primary key (time, lat, lon)
+    primary key (timestamp, lat, lon)
 );
 """
 
