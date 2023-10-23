@@ -1,3 +1,7 @@
+# import os
+
+# os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 import logging
 import time
 from datetime import datetime
@@ -8,6 +12,7 @@ import shelve
 
 from download_common import (
     save_to_pq,
+    save_to_db,
     initial_report,
     final_report,
     SERVERS,
@@ -17,8 +22,6 @@ from download_async import download_many as download_readings_async
 from download_concur import download_many as download_readings_concur
 from download_seq import download_many as download_readings_seq
 from validate_reading import validate_reading
-
-
 
 
 cities = {
@@ -41,8 +44,8 @@ cities = {
     "Munich": {"country": "DE"},
     "Kharkiv": {"country": "UA"},
     "Milan": {"country": "IT"},
+    "Prague": {"country": "CZ"},
 }
-
 
 
 def update_city_lat_lon(cities: dict) -> dict:
@@ -51,7 +54,7 @@ def update_city_lat_lon(cities: dict) -> dict:
 
     This function either updates the latitude and longitude coordinates of the provided cities
     or retrieves them if not already available in the `cities` dictionary. If the coordinates
-    are retrieved or updated, they are stored in a dictionary with city names as keys and 
+    are retrieved or updated, they are stored in a dictionary with city names as keys and
     dictionaries containing 'lat' and 'lon' coordinates as values.
 
     Args:
@@ -74,7 +77,7 @@ def update_city_lat_lon(cities: dict) -> dict:
         logging.info("Finished update at: " + str(datetime.now()))
         with shelve.open("city_lat_lon") as db:
             db["city_lat_lon"] = city_lat_lon
-    
+
     return city_lat_lon
 
 
@@ -115,15 +118,15 @@ def main(concur_type=None, max_concur_req=None):
     """
     Main function to orchestrate the data download and processing workflow.
 
-    This function retrieves latitude and longitude coordinates for a list of cities, 
-    downloads weather data based on the specified concurrency type, and saves the 
-    valid data to a Parquet file. It also generates and logs initial and final reports 
+    This function retrieves latitude and longitude coordinates for a list of cities,
+    downloads weather data based on the specified concurrency type, and saves the
+    valid data to a Parquet file. It also generates and logs initial and final reports
     including concurrency type, max concurrency, and elapsed time.
 
     Args:
-        concur_type (str, optional): The concurrency type to use for downloading data 
+        concur_type (str, optional): The concurrency type to use for downloading data
             (e.g., 'thread', 'process', 'coroutine'). Default is None.
-        max_concur_req (int, optional): The maximum number of concurrent requests to 
+        max_concur_req (int, optional): The maximum number of concurrent requests to
             make during data download. Default is None.
 
     Returns:
@@ -138,36 +141,25 @@ def main(concur_type=None, max_concur_req=None):
         result = download_readings_concur(
             SERVERS["WEATHER"], city_lat_lon, "thread", max_concur_req
         )
-        df = result[0]
-        counter = result[1]
-        valid_readings_batch = validate_reading(df)
-        save_to_pq(valid_readings_batch)
-
     elif concur_type == "process":
         if __name__ == "__main__":
             result = download_readings_concur(
                 SERVERS["WEATHER"], city_lat_lon, "process", max_concur_req
             )
-        df = result[0]
-        counter = result[1]
-        valid_readings_batch = validate_reading(df)
-        save_to_pq(valid_readings_batch)
-
     elif concur_type == "coroutine":
         if __name__ == "__main__":
             result = download_readings_async(
                 SERVERS["WEATHER"], city_lat_lon, max_concur_req=len(city_lat_lon)
             )
-        df = result[0]
-        counter = result[1]
-
     else:
         if __name__ == "__main__":
             result = download_readings_seq(SERVERS["WEATHER"], city_lat_lon)
-        df = result[0]
-        counter = result[1]
-        valid_readings_batch = validate_reading(df)
-        save_to_pq(valid_readings_batch)
+
+    df = result[0]
+    counter = result[1]
+    valid_readings_batch = validate_reading(df)
+    save_to_pq(valid_readings_batch)
+    save_to_db(valid_readings_batch)
 
     final_report(counter, t0)
 
@@ -175,4 +167,4 @@ def main(concur_type=None, max_concur_req=None):
 
 
 if __name__ == "__main__":
-    print(main(concur_type=None))
+    print(main(concur_type="coroutine"))
