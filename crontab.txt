@@ -1,1 +1,1 @@
-56 * * * * /bin/sh -c "cd /Users/bfaris96/Desktop/turing-proj/weather_reader/weather_reader && /Users/bfaris96/Desktop/turing-proj/weather_reader/.venv/bin/python /Users/bfaris96/Desktop/turing-proj/weather_reader/weather_reader/cron_executor.py"
+32 * * * * /usr/local/bin/docker run weather_reader python /app/weather_reader/main.py
