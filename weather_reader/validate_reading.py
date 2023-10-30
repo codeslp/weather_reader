@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, ValidationError
 from typing import Optional
 from datetime import datetime
 import logging
+import logging.config
 import pandas as pd
 
 
