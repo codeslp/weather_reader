@@ -1,15 +1,27 @@
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
 
-file_handler = logging.FileHandler("logs.log")
-file_handler.setLevel(logging.INFO)
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-file_handler.setFormatter(formatter)
+def configure_logger():
+    # Creating a formatter for the logs
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
 
-root_logger = logging.getLogger()
-root_logger.addHandler(file_handler)
+    # Creating a handler to write log messages to a file
+    file_handler = logging.FileHandler("logs.log")
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(formatter)
+
+    # Creating a handler to write log messages to the console
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+
+    # Getting the root logger
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
+    # Adding handlers to the logger
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+

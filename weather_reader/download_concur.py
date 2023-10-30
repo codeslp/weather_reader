@@ -1,5 +1,6 @@
 import httpx
 import logging
+import logging.config
 from collections import Counter
 from pandas import DataFrame
 import pandas as pd

@@ -1,15 +1,14 @@
 from collections import Counter
 from datetime import datetime
 import logging
-import logging_config
-from urllib.parse import urlencode
+from logging_config import configure_logger
 
 import httpx
 from http import HTTPStatus
 import pandas as pd
 from pandas import DataFrame
 
-from download_common import DownloadStatus, save_to_pq, API_KEY
+from download_common import DownloadStatus, API_KEY
 
 
 def get_weather(base_url: str, lat: float, lon: float) -> (str, dict):
@@ -75,13 +74,13 @@ def download_one(base_url: str, city_lat_long_row: dict) -> (DataFrame, Download
     return (df, status)
 
 
-def flatten_nested_dict(nested_dict, parent_key="", sep="_") -> dict:
+def flatten_nested_dict(nested_dict, parent_key=None, sep="_") -> dict:
     """
     Flatten a nested dictionary into a flat dictionary.
 
     Args:
         nested_dict (dict): The nested dictionary to be flattened.
-        parent_key (str, optional): The parent key used for prefixing keys.
+        parent_key (None, optional): The parent key used for prefixing keys.
         sep (str, optional): The separator used to separate keys in the flattened dictionary.
 
     Returns:
@@ -94,7 +93,6 @@ def flatten_nested_dict(nested_dict, parent_key="", sep="_") -> dict:
             items.update(flatten_nested_dict(v, new_key, sep=sep))
         else:
             items[new_key] = v
-
     return items
 
 

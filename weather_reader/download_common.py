@@ -1,4 +1,5 @@
 import logging
+from logging_config import configure_logger
 import os
 import time
 from datetime import datetime
@@ -36,7 +37,6 @@ SERVERS = {
 engine = create_engine(
     SERVERS["POSTGRES_DB_SERVER"], connect_args={"options": "-csearch_path=public"}
 )
-
 
 DownloadStatus = Enum("DownloadStatus", "OK NOT_FOUND ERROR")
 

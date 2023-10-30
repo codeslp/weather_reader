@@ -3,6 +3,7 @@ from datetime import datetime
 import asyncio
 import httpx
 import logging
+import logging.config
 from pandas import DataFrame
 import pandas as pd
 from download_common import DownloadStatus, API_KEY
